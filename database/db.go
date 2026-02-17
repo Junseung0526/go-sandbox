@@ -41,6 +41,7 @@ func SeedData() {
 		for _, s := range dummyStudents {
 			DB.Create(&s)
 		}
-		fmt.Println("더미 데이터 시딩 완료! 🌱")
+
+		fmt.Println("더미 데이터 시딩 완료!")
 	}
 }
