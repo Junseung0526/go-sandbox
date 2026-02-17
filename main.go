@@ -2,35 +2,56 @@ package main
 
 import "fmt"
 
+type Student struct {
+	Name     string
+	Age      int
+	Dept     string
+	IsActive bool
+}
+
+func (s Student) Introduce() {
+	fmt.Printf("안녕하세요, %s학과 %d살 %s입니다!\n", s.Dept, s.Age, s.Name)
+}
+
+//포인터로 데이터를 메모리 주소로 넘겨줌
+func (s *Student) HaveBirthday() {
+	s.Age++
+}
+
 func main() {
-	// calculator.go에 있는 함수를 별도 임포트 없이 바로 쓸 수 있음
-
-	//기존 방식
-	var name string = "gri22ly"
-
-	//go 스타일
-	age := 24
-	name2 := "junseung"
-
-	fmt.Println(name, age, name2)
-
-	//선언과 동시에 초기화 (:= 사용)
-	scores := map[string]int{
-		"Kim":  90,
-		"Lee":  85,
-		"Park": 100,
+	// --- Map 연습 파트 ---
+	prt := map[string]int{
+		"junseung": 24,
+		"hyojun":   21,
+		"minseung": 22,
 	}
 
-	//값 추가 및 수정
-	scores["Choi"] = 95
-
-	//값 삭제
-	delete(scores, "Lee")
-
-	//데이터 확인
-	//존재 여부를 같이 알려줌
-	val, ok := scores["Kim"]
+	val, ok := prt["grizzly"]
 	if ok {
-		fmt.Println("찾은 값:", val)
+		fmt.Println("나이:", val)
+	} else {
+		fmt.Println("데이터가 존재하지 않습니다.")
 	}
+
+	// --- 구조체 연습 파트 ---
+	s1 := Student{
+		Name: "김준승",
+		Age:  24,
+		Dept: "스마트소프트웨어",
+	}
+
+	s2 := Student{"홍길동", 20, "컴퓨터공학", true}
+
+	// 출력 테스트
+	fmt.Println("s1 정보:", s1.Name, s1.Age)
+	fmt.Println("s2 정보:", s2.Name, s2.Age)
+
+	s1.HaveBirthday()
+	s2.HaveBirthday()
+
+	fmt.Println("s1 정보:", s1.Name, s1.Age)
+	fmt.Println("s2 정보:", s2.Name, s2.Age)
+
+	// 메서드 호출 테스트
+	s1.Introduce()
 }
