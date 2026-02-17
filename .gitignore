@@ -1,0 +1,10 @@
+# 실행 파일
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# 프로젝트 이름으로 생성된 바이너리 (예: go-play)
+go-study
