@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
-// Student 구조체: JSON 태그와 검증(binding) 태그 포함
+// Student 구조체: 생성(POST) 시에는 모든 값이 필수입니다.
 type Student struct {
 	ID   int    `json:"id" binding:"required"`
 	Name string `json:"name" binding:"required"`
@@ -14,8 +15,14 @@ type Student struct {
 	Dept string `json:"dept"`
 }
 
-// 가상의 데이터베이스 (메모리 슬라이스)
-// 가상의 데이터베이스 (메모리 슬라이스)
+// 🆕 UpdateStudentInput: 수정(PATCH) 시에는 필드들이 선택사항입니다.
+// required를 제거하여 필요한 데이터만 보낼 수 있게 합니다.
+type UpdateStudentInput struct {
+	Name string `json:"name"`
+	Age  int    `json:"age" binding:"omitempty,gt=0"` // 값이 있을 때만 0보다 큰지 검사
+	Dept string `json:"dept"`
+}
+
 var students = []Student{
 	{ID: 1, Name: "Kim Junseung", Age: 24, Dept: "Smart Software"},
 	{ID: 2, Name: "Min-ji", Age: 22, Dept: "Computer Science"},
@@ -27,43 +34,67 @@ var students = []Student{
 	{ID: 8, Name: "Ye-rin", Age: 20, Dept: "Design"},
 }
 
-// [GET] 전체 학생 목록 조회
 func GetStudents(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"data":   students,
-	})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "data": students})
 }
 
-// [POST] 학생 추가 (에러 보강 버전)
 func CreateStudent(c *gin.Context) {
 	var newStudent Student
-
-	// 1. JSON 바인딩 및 필수값 검증
 	if err := c.ShouldBindJSON(&newStudent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"status":  "fail",
-			"message": "입력 형식이 잘못되었거나 필수 값이 누락되었습니다.",
-			"error":   err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "error": err.Error()})
 		return
 	}
 
-	// 2. ID 중복 체크 (비즈니스 로직)
 	for _, s := range students {
 		if s.ID == newStudent.ID {
-			c.JSON(http.StatusConflict, gin.H{
-				"status":  "error",
-				"message": "이미 존재하는 학생 ID입니다.",
-			})
+			c.JSON(http.StatusConflict, gin.H{"status": "error", "message": "중복된 ID"})
 			return
 		}
 	}
 
-	// 3. 데이터 저장
 	students = append(students, newStudent)
-	c.JSON(http.StatusCreated, gin.H{
-		"status": "success",
-		"data":   newStudent,
-	})
+	c.JSON(http.StatusCreated, gin.H{"status": "success", "data": newStudent})
+}
+
+// [PATCH] 수정 로직 보강
+func UpdateStudent(c *gin.Context) {
+	idStr := c.Param("id")
+
+	// Student 대신 UpdateStudentInput 사용 (Validation 에러 해결)
+	var input UpdateStudentInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "error": err.Error()})
+		return
+	}
+
+	for i := range students {
+		if fmt.Sprintf("%d", students[i].ID) == idStr {
+			// 데이터가 들어온 경우에만 업데이트
+			if input.Name != "" {
+				students[i].Name = input.Name
+			}
+			if input.Age > 0 {
+				students[i].Age = input.Age
+			}
+			if input.Dept != "" {
+				students[i].Dept = input.Dept
+			}
+
+			c.JSON(http.StatusOK, gin.H{"status": "success", "data": students[i]})
+			return
+		}
+	}
+	c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "학생 없음"})
+}
+
+func DeleteStudent(c *gin.Context) {
+	idStr := c.Param("id")
+	for i, s := range students {
+		if fmt.Sprintf("%d", s.ID) == idStr {
+			students = append(students[:i], students[i+1:]...)
+			c.JSON(http.StatusOK, gin.H{"status": "success", "message": "삭제 완료"})
+			return
+		}
+	}
+	c.JSON(http.StatusNotFound, gin.H{"status": "error", "message": "학생 없음"})
 }
