@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"go-study/database" // 프로젝트 경로에 맞춰 수정
+	"go-study/database"
 	"go-study/models"
 	"net/http"
 

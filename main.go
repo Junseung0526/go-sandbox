@@ -11,17 +11,19 @@ import (
 
 func main() {
 	database.InitDB()
-	database.DB.AutoMigrate(&models.Student{})
+	// User 모델도 자동 마이그레이션에 추가
+	database.DB.AutoMigrate(&models.Student{}, &models.User{})
 	database.SeedData()
 
 	r := gin.New()
-
-	// 전역 미들웨어 적용
 	r.Use(middleware.Logger())
-	r.Use(gin.Recovery()) // 서버가 갑자기 죽는걸 방지해주는 기본 미들웨어
+	r.Use(gin.Recovery())
 
 	v1 := r.Group("/api/v1")
 	{
+		// 회원가입 API 추가
+		v1.POST("/register", handlers.Register)
+
 		v1.GET("/students", handlers.GetStudents)
 		v1.POST("/students", handlers.CreateStudent)
 		v1.PATCH("/students/:id", handlers.UpdateStudent)
