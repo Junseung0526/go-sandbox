@@ -10,7 +10,19 @@ import (
 
 func GetStudents(c *gin.Context) {
 	var students []models.Student
-	database.DB.Find(&students)
+	query := database.DB
+
+	dept := c.Query("dept")
+	if dept != "" {
+		query = query.Where("dept = ?", dept)
+	}
+
+	name := c.Query("name")
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+
+	query.Find(&students)
 	c.JSON(http.StatusOK, gin.H{"status": "success", "data": students})
 }
 
