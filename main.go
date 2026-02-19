@@ -23,6 +23,7 @@ func main() {
 	{
 		// 회원가입 API 추가
 		v1.POST("/register", handlers.Register)
+		v1.POST("/login", handlers.Login)
 
 		v1.GET("/students", handlers.GetStudents)
 		v1.POST("/students", handlers.CreateStudent)
