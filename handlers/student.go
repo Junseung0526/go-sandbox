@@ -48,3 +48,32 @@ func DeleteStudent(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "삭제 완료"})
 }
+
+func UploadProfile(c *gin.Context) {
+	id := c.Param("id")
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "파일을 찾을 수 없습니다."})
+		return
+	}
+
+	dst := "uploads/" + id + "_" + file.Filename
+	if err := c.SaveUploadedFile(file, dst); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "파일 저장 실패"})
+		return
+	}
+
+	var student models.Student
+	if err := database.DB.First(&student, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "학생을 찾을 수 없습니다."})
+		return
+	}
+
+	database.DB.Model(&student).Update("ProfileImage", dst)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"path":   dst,
+	})
+}

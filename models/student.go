@@ -3,10 +3,11 @@ package models
 import "gorm.io/gorm"
 
 type Student struct {
-	gorm.Model        // ID, CreatedAt, UpdatedAt, DeletedAt 자동 생성
-	Name       string `json:"name" binding:"required"`
-	Age        int    `json:"age" binding:"required,gt=0"`
-	Dept       string `json:"dept"`
+	gorm.Model
+	Name         string `json:"name" binding:"required"`
+	Age          int    `json:"age" binding:"required,gt=0"`
+	Dept         string `json:"dept"`
+	ProfileImage string `json:"profile_image"`
 }
 
 type UpdateStudentInput struct {

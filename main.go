@@ -11,7 +11,6 @@ import (
 
 func main() {
 	database.InitDB()
-	// User 모델도 자동 마이그레이션에 추가
 	database.DB.AutoMigrate(&models.Student{}, &models.User{})
 	database.SeedData()
 
@@ -19,17 +18,22 @@ func main() {
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
 
+	r.Static("/uploads", "./uploads")
+
 	v1 := r.Group("/api/v1")
 	{
 		// 회원가입 API 추가
 		v1.POST("/register", handlers.Register)
 		v1.POST("/login", handlers.Login)
 
+		//프로필 사진 업로드 API
+		v1.POST("/students/:id/upload", middleware.Auth(), handlers.UploadProfile)
+
 		v1.GET("/students", handlers.GetStudents)
 		v1.POST("/students", handlers.CreateStudent)
 		v1.PATCH("/students/:id", middleware.Auth(), handlers.UpdateStudent)
 		v1.DELETE("/students/:id", middleware.Auth(), handlers.DeleteStudent)
 	}
-
+	r.MaxMultipartMemory = 8 << 20
 	r.Run(":8080")
 }
