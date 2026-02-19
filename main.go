@@ -27,7 +27,7 @@ func main() {
 
 		v1.GET("/students", handlers.GetStudents)
 		v1.POST("/students", handlers.CreateStudent)
-		v1.PATCH("/students/:id", handlers.UpdateStudent)
+		v1.PATCH("/students/:id", middleware.Auth(), handlers.UpdateStudent)
 		v1.DELETE("/students/:id", middleware.Auth(), handlers.DeleteStudent)
 	}
 
