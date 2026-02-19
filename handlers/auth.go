@@ -4,10 +4,55 @@ import (
 	"go-study/database"
 	"go-study/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// JWT를 서명할 때 사용할 비밀키 (실무에서는 환경변수로 관리해야 함)
+var jwtKey = []byte("your_secret_key")
+
+func Login(c *gin.Context) {
+	var input models.User
+	var user models.User
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 1. 유저 확인
+	if err := database.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
+		return
+	}
+
+	// 2. 비밀번호 검증
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
+		return
+	}
+
+	// 3. 🆕 JWT 토큰 생성
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"username": user.Username,
+		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24시간 후 만료
+	})
+
+	tokenString, err := token.SignedString(jwtKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "토큰 생성 실패"})
+		return
+	}
+
+	// 4. 토큰 전달
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"token":  tokenString,
+	})
+}
 
 func Register(c *gin.Context) {
 	var user models.User
@@ -27,38 +72,4 @@ func Register(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "회원가입 성공!"})
-}
-
-// [POST] 로그인
-func Login(c *gin.Context) {
-	var input models.User
-	var user models.User
-
-	// 1. 입력 데이터 바인딩
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "fail", "error": err.Error()})
-		return
-	}
-
-	// 2. DB에서 유저 찾기
-	if err := database.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "아이디 또는 비밀번호가 틀렸습니다."})
-		return
-	}
-
-	// 3. 비밀번호 비교 (bcrypt)
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "error", "message": "아이디 또는 비밀번호가 틀렸습니다."})
-		return
-	}
-
-	// 4. 성공 응답 (나중에는 여기서 JWT 토큰을 발급합니다)
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "로그인 성공!",
-		"user": gin.H{
-			"username": user.Username,
-		},
-	})
 }
