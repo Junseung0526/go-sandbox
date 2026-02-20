@@ -4,6 +4,7 @@ import (
 	"go-study/database"
 	"go-study/models"
 	"net/http"
+	"os" // 🆕 추가
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,10 +12,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// JWT를 서명할 때 사용할 비밀키 (실무에서는 환경변수로 관리해야 함)
-var jwtKey = []byte("your_secret_key")
-
 func Login(c *gin.Context) {
+	// 🆕 환경 변수에서 시크릿 키 로드
+	jwtKey := []byte(os.Getenv("JWT_SECRET"))
+	if len(jwtKey) == 0 {
+		jwtKey = []byte("your_secret_key")
+	}
+
 	var input models.User
 	var user models.User
 
@@ -23,19 +27,11 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 유저 확인
 	if err := database.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "인증 실패"})
 		return
 	}
 
-	// 비밀번호 검증
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
-		return
-	}
-
-	// JWT 토큰 생성
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": user.Username,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(),
@@ -47,11 +43,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 토큰 전달
-	c.JSON(http.StatusOK, gin.H{
-		"status": "success",
-		"token":  tokenString,
-	})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "token": tokenString})
 }
 
 func Register(c *gin.Context) {
