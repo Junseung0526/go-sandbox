@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"go-study/database"
+	"go-study/models"
 	"net/http"
 	"sync"
 
@@ -8,14 +10,12 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// 접속한 클라이언트들을 관리할 맵과 뮤텍스
 var (
 	clients   = make(map[*websocket.Conn]bool)
 	broadcast = make(chan Message)
 	mutex     = sync.Mutex{}
 )
 
-// 메시지 구조체
 type Message struct {
 	Username string `json:"username"`
 	Content  string `json:"content"`
@@ -32,12 +32,10 @@ func HandleWebSocket(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	// 1. 새로운 클라이언트 등록
 	mutex.Lock()
 	clients[conn] = true
 	mutex.Unlock()
 
-	// 연결 종료 시 클라이언트 제거
 	defer func() {
 		mutex.Lock()
 		delete(clients, conn)
@@ -46,20 +44,25 @@ func HandleWebSocket(c *gin.Context) {
 
 	for {
 		var msg Message
-		// JSON 형태의 메시지 읽기
 		err := conn.ReadJSON(&msg)
 		if err != nil {
 			break
 		}
-		// 브로드캐스트 채널로 메시지 전송
 		broadcast <- msg
 	}
 }
 
-// 2. 모든 클라이언트에게 메시지를 전달하는 루틴 (main에서 실행)
 func HandleMessages() {
 	for {
 		msg := <-broadcast
+
+		// 🆕 DB에 채팅 내역 저장
+		chatEntry := models.ChatMessage{
+			Username: msg.Username,
+			Content:  msg.Content,
+		}
+		database.DB.Create(&chatEntry)
+
 		mutex.Lock()
 		for client := range clients {
 			err := client.WriteJSON(msg)
@@ -70,4 +73,15 @@ func HandleMessages() {
 		}
 		mutex.Unlock()
 	}
+}
+
+func GetChatHistory(c *gin.Context) {
+	var messages []models.ChatMessage
+	// 최근 50개의 메시지만 가져오기
+	database.DB.Order("created_at desc").Limit(50).Find(&messages)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data":   messages,
+	})
 }

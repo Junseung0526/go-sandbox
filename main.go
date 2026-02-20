@@ -11,7 +11,7 @@ import (
 
 func main() {
 	database.InitDB()
-	database.DB.AutoMigrate(&models.Student{}, &models.User{})
+	database.DB.AutoMigrate(&models.Student{}, &models.User{}, &models.ChatMessage{})
 	database.SeedData()
 
 	go handlers.HandleMessages()
@@ -26,6 +26,7 @@ func main() {
 	{
 		// WebSocket
 		v1.GET("/ws", handlers.HandleWebSocket)
+		v1.GET("/chat/history", handlers.GetChatHistory)
 
 		// 회원가입 및 로그인
 		v1.POST("/register", handlers.Register)
