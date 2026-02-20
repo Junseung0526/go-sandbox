@@ -5,6 +5,7 @@ import (
 	"go-study/handlers"
 	"go-study/middleware"
 	"go-study/models"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +18,7 @@ func main() {
 	go handlers.HandleMessages()
 
 	r := gin.New()
+
 	r.Use(middleware.CORS())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
@@ -42,6 +44,14 @@ func main() {
 		v1.PATCH("/students/:id", middleware.Auth(), handlers.UpdateStudent)
 		v1.DELETE("/students/:id", middleware.Auth(), handlers.DeleteStudent)
 	}
+
 	r.MaxMultipartMemory = 8 << 20
-	r.Run(":8080")
+
+	// 배포 환경을 위한 포트 설정 로직
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	r.Run(":" + port)
 }
