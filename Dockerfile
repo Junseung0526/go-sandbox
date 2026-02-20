@@ -17,8 +17,8 @@ RUN apk add --no-cache ca-certificates libc6-compat
 
 WORKDIR /root/
 
-COPY --from:builder /app/main .
-COPY --from:builder /app/uploads ./uploads
+COPY --from=builder /app/main .
+COPY --from=builder /app/uploads ./uploads
 
 EXPOSE 8080
 
