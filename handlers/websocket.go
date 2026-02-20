@@ -56,7 +56,7 @@ func HandleMessages() {
 	for {
 		msg := <-broadcast
 
-		// 🆕 DB에 채팅 내역 저장
+		// DB에 채팅 내역 저장
 		chatEntry := models.ChatMessage{
 			Username: msg.Username,
 			Content:  msg.Content,

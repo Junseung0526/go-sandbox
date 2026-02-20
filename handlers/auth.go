@@ -23,22 +23,22 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 1. 유저 확인
+	// 유저 확인
 	if err := database.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
 		return
 	}
 
-	// 2. 비밀번호 검증
+	// 비밀번호 검증
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "아이디 또는 비밀번호가 틀렸습니다."})
 		return
 	}
 
-	// 3. 🆕 JWT 토큰 생성
+	// JWT 토큰 생성
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": user.Username,
-		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24시간 후 만료
+		"exp":      time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	tokenString, err := token.SignedString(jwtKey)
@@ -47,7 +47,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// 4. 토큰 전달
+	// 토큰 전달
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"token":  tokenString,
