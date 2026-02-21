@@ -20,6 +20,7 @@ func main() {
 	r := gin.New()
 
 	r.Use(middleware.CORS())
+	r.Use(middleware.ErrorNotifier())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
 
